@@ -1,6 +1,8 @@
 import requests
+import json
 from pyquery import PyQuery as pq
 from pprint import pprint as pp
+from tkinter import *
 
 
 def series_for_card(card_name):
@@ -10,7 +12,6 @@ def series_for_card(card_name):
     results = d('div.productListRow div.mainListing div.productCardWrapper')
 
     series = {}
-#    editions = []
 
     for card in results.items():
         title = list(card.find('div.itemContentWrapper .productDetailTitle a').items())[0].text().strip()
@@ -27,7 +28,19 @@ def series_for_card(card_name):
 
 
 while True:
+    series = {}
     card_name = input('Card name: ')
-    series = series_for_card(card_name)
+
+    with open('collection.json', 'r') as collection:
+        file_content = collection.read()
+        series = json.loads(file_content)
+        collection.close()
+
+    series.update(series_for_card(card_name))
+
+    with open('collection.json', 'w') as collection:
+        json.dump(series, collection)
+        collection.close()
+
     pp(series)
     print()

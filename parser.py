@@ -2,8 +2,8 @@ import requests
 import json
 from pyquery import PyQuery as pq
 from pprint import pprint as pp
-from tkinter import *
 
+## FUNCTIONS ##
 
 def series_for_card(card_name):
     card_search_url = 'https://www.cardkingdom.com/catalog/search?filter%5Bipp%5D=60&filter%5Bsort%5D=name&filter%5Bname%5D={}'
@@ -26,20 +26,52 @@ def series_for_card(card_name):
 
     return series
 
+def specfic_card_cost(card_name, edition):
+    price = 'NOT_FOUND'
 
+    card_url = 'https://www.cardkingdom.com/catalog/view/?filter%5Bsort%5D=name&filter%5Bsearch%5D=mtg_advanced&filter%5Btab%5D=mtg_foil&filter%5Bname%5D={}&filter%5Bcategory_id%5D={}&filter%5Bmulti%5D%5B0%5D=1&filter%5Btype_mode%5D=any&filter%5Btype_key%5D=&filter%5Bpow1%5D=&filter%5Bpow2%5D=&filter%5Btuf1%5D=&filter%5Btuf2%5D=&filter%5Bconcast1%5D=&filter%5Bconcast2%5D=&filter%5Bprice_op%5D=&filter%5Bprice%5D=&filter%5Bkey_text1%5D=&filter%5Bmanaprod_select%5D=any&filter[tab]=mtg_card'
+    search_result = requests.get(card_url.format(card_name, edition))
+    d = pq(search_result.content)
+    results = d('div.productListRow div.mainListing div.productCardWrapper')
+
+    for card in results.items():
+        price = list(card.find('div.itemContentWrapper div.addToCartWrapper div.amtAndPrice .stylePrice').items())[0].text().strip()
+
+    return price
+
+def load_editions():
+    search_url = 'https://www.cardkingdom.com/catalog/search?filter%5Bipp%5D=60&filter%5Bsort%5D=name&filter%5Bname%5D=Search'
+    search_result = requests.get(search_url)
+    d = pq(search_result.content)
+    results = d('div.productListRow div.sidePanel div.editionToggle div.filterContainer div.layoutWrapper select option[value]')
+
+    editions = {}
+
+    for edition in results.items():
+        editions[edition.text().strip()] = edition.val()
+
+    with open('edColl.json', 'w') as jsoun:
+        json.dump(editions, jsoun)
+        jsoun.close()
+
+    return 'DONE'
+
+## ACTUAL PROGRAM ##
+
+load_editions()
 while True:
-    series = {}
     card_name = input('Card name: ')
 
     with open('collection.json', 'r') as collection:
         file_content = collection.read()
-        series = json.loads(file_content)
+        json_content = json.loads(file_content)
         collection.close()
 
-    series.update(series_for_card(card_name))
+    series = specfic_card_cost(card_name, 2575)
+    #json_content.update(series)
 
     with open('collection.json', 'w') as collection:
-        json.dump(series, collection)
+        json.dump(json_content, collection)
         collection.close()
 
     pp(series)
